@@ -1,0 +1,22 @@
+{
+  "name": "campusflow-backend",
+  "version": "1.0.0",
+  "description": "Backend API for CampusFlow - Smart Campus Event & Resource Management System",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "helmet": "^8.3.0",
+    "mongoose": "^8.24.10",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "3.1.11"
+  }
+}
