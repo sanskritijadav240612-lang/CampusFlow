@@ -21,3 +21,14 @@ export const loginLimiter = rateLimit({
     message: 'Too many login attempts. Please try again after 15 minutes.',
   },
 });
+
+export const aiMessageLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // Limit each IP to 20 AI message requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many AI message requests. Please wait a moment and try again.',
+  },
+});
