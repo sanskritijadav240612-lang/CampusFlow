@@ -7,13 +7,13 @@ import { createResourceSchema } from '../validators/resource.schemas.js';
 
 const router = Router();
 
-// Protect all resource management routes: authenticated faculty only
-router.use(requireAuth, requireRole('faculty'));
+// Require authentication for all resource routes
+router.use(requireAuth);
 
-// GET /api/resources - Return resource inventory
+// GET /api/resources - Return resource inventory (authenticated students and faculty)
 router.get('/', getResources);
 
-// POST /api/resources - Add a capacity or quantity resource
-router.post('/', validate(createResourceSchema), createResource);
+// POST /api/resources - Add a capacity or quantity resource (faculty only)
+router.post('/', requireRole('faculty'), validate(createResourceSchema), createResource);
 
 export default router;
