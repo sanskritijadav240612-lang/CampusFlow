@@ -25,12 +25,28 @@ export const PublicNavbar = () => {
             </div>
           </Link>
 
-          {/* Public Navigation Links & Actions */}
-          <nav className="flex items-center gap-3">
+          {/* Center Navigation Links (visible on landing) */}
+          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-600">
+            <Link to="/" className="hover:text-slate-900 transition-colors">
+              Home
+            </Link>
+            <a href="#features" className="hover:text-slate-900 transition-colors">
+              Platform Features
+            </a>
+            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">
+              How It Works
+            </a>
+            <a href="#resources" className="hover:text-slate-900 transition-colors">
+              Resources
+            </a>
+          </nav>
+
+          {/* Action CTAs */}
+          <div className="flex items-center gap-2.5">
             {location.pathname !== '/login' && (
               <Link to="/login">
                 <Button variant="ghost" size="sm">
-                  Student Portal
+                  Student Sign In
                 </Button>
               </Link>
             )}
@@ -48,7 +64,7 @@ export const PublicNavbar = () => {
                 </Button>
               </Link>
             )}
-          </nav>
+          </div>
         </div>
       </div>
     </header>

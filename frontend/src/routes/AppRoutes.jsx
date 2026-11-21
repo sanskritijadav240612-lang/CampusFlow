@@ -6,6 +6,10 @@ import PublicLayout from '../layouts/PublicLayout';
 import StudentLayout from '../layouts/StudentLayout';
 import FacultyLayout from '../layouts/FacultyLayout';
 
+// Route Guards
+import ProtectedRoute from '../components/common/ProtectedRoute';
+import PublicOnlyRoute from '../components/common/PublicOnlyRoute';
+
 // Public Pages
 import LandingPage from '../pages/public/LandingPage';
 import StudentLoginPage from '../pages/public/StudentLoginPage';
@@ -26,39 +30,48 @@ import FacultyRequestDetailPage from '../pages/faculty/FacultyRequestDetailPage'
 import FacultyResourcesPage from '../pages/faculty/FacultyResourcesPage';
 import FacultyProfilePage from '../pages/faculty/FacultyProfilePage';
 
-// 404
+// 404 Page
 import NotFoundPage from '../pages/NotFoundPage';
 
 export const AppRoutes = () => {
   return (
     <Routes>
-      {/* 1. Public Routes */}
+      {/* 1. PUBLIC WEBSITE & AUTH ROUTES */}
       <Route element={<PublicLayout />}>
+        {/* Landing Page: Accessible to everyone */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<StudentLoginPage />} />
-        <Route path="/register" element={<StudentRegisterPage />} />
-        <Route path="/faculty/login" element={<FacultyLoginPage />} />
+
+        {/* Public-only authentication routes (redirect authenticated users) */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<StudentLoginPage />} />
+          <Route path="/register" element={<StudentRegisterPage />} />
+          <Route path="/faculty/login" element={<FacultyLoginPage />} />
+        </Route>
       </Route>
 
-      {/* 2. Student Portal Routes */}
-      <Route path="/student" element={<StudentLayout />}>
-        <Route index element={<StudentDashboardPage />} />
-        <Route path="create-request" element={<CreateRequestPage />} />
-        <Route path="requests" element={<MyRequestsPage />} />
-        <Route path="requests/:requestId" element={<RequestDetailPage />} />
-        <Route path="profile" element={<StudentProfilePage />} />
+      {/* 2. PROTECTED STUDENT PORTAL */}
+      <Route element={<ProtectedRoute allowedRole="student" />}>
+        <Route path="/student" element={<StudentLayout />}>
+          <Route index element={<StudentDashboardPage />} />
+          <Route path="create-request" element={<CreateRequestPage />} />
+          <Route path="requests" element={<MyRequestsPage />} />
+          <Route path="requests/:requestId" element={<RequestDetailPage />} />
+          <Route path="profile" element={<StudentProfilePage />} />
+        </Route>
       </Route>
 
-      {/* 3. Faculty Portal Routes */}
-      <Route path="/faculty" element={<FacultyLayout />}>
-        <Route index element={<FacultyDashboardPage />} />
-        <Route path="requests" element={<FacultyRequestsPage />} />
-        <Route path="requests/:requestId" element={<FacultyRequestDetailPage />} />
-        <Route path="resources" element={<FacultyResourcesPage />} />
-        <Route path="profile" element={<FacultyProfilePage />} />
+      {/* 3. PROTECTED FACULTY / ADMIN PORTAL */}
+      <Route element={<ProtectedRoute allowedRole="faculty" />}>
+        <Route path="/faculty" element={<FacultyLayout />}>
+          <Route index element={<FacultyDashboardPage />} />
+          <Route path="requests" element={<FacultyRequestsPage />} />
+          <Route path="requests/:requestId" element={<FacultyRequestDetailPage />} />
+          <Route path="resources" element={<FacultyResourcesPage />} />
+          <Route path="profile" element={<FacultyProfilePage />} />
+        </Route>
       </Route>
 
-      {/* 4. Fallback 404 */}
+      {/* 4. FALLBACK 404 NOT FOUND */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
