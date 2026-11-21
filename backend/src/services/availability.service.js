@@ -51,7 +51,7 @@ export const calculateMaxConcurrentQuantity = (allocations, requestedStart, requ
  * Supports optional MongoDB transaction session for atomic consistency during approval.
  */
 export const checkAvailability = async (
-  { startAt, endAt, attendeeCount, requestedResources },
+  { startAt, endAt, attendeeCount, requestedResources, excludeRequestId },
   { session } = {}
 ) => {
   const requestedStart = new Date(startAt);
@@ -72,14 +72,21 @@ export const checkAvailability = async (
   // De-duplicate requested resources and aggregate quantities for quantity resources
   const resourceMap = new Map();
   for (const item of requestedResources) {
-    const idStr = item.resourceId.toString();
+    const rawId = item.resourceId?._id || item.resourceId;
+    if (!rawId) continue;
+    const idStr = rawId.toString();
+    const qty = item.requestedQuantity ? Number(item.requestedQuantity) : undefined;
+
     if (resourceMap.has(idStr)) {
       const existing = resourceMap.get(idStr);
-      if (item.requestedQuantity) {
-        existing.requestedQuantity = (existing.requestedQuantity || 0) + item.requestedQuantity;
+      if (qty) {
+        existing.requestedQuantity = (existing.requestedQuantity || 0) + qty;
       }
     } else {
-      resourceMap.set(idStr, { ...item });
+      resourceMap.set(idStr, {
+        resourceId: rawId,
+        requestedQuantity: qty,
+      });
     }
   }
 
@@ -96,13 +103,20 @@ export const checkAvailability = async (
 
   // Load active overlapping allocations (within session if provided)
   // Overlap condition: allocation.startAt < requestedEnd AND allocation.endAt > requestedStart
+  // Exclude allocations that belong to the request being checked (prevents self-conflict)
+  const allocQuery = {
+    resourceId: { $in: resourceIds },
+    status: 'active',
+    startAt: { $lt: requestedEnd },
+    endAt: { $gt: requestedStart },
+  };
+
+  if (excludeRequestId) {
+    allocQuery.eventRequestId = { $ne: excludeRequestId };
+  }
+
   const overlappingAllocations = await Allocation.find(
-    {
-      resourceId: { $in: resourceIds },
-      status: 'active',
-      startAt: { $lt: requestedEnd },
-      endAt: { $gt: requestedStart },
-    },
+    allocQuery,
     null,
     session ? { session } : {}
   );

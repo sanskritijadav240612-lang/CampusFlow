@@ -31,13 +31,36 @@ export const authService = {
   },
 
   /**
-   * Faculty / Admin Login
+   * Faculty / Admin Login - Step 1: Send credentials and trigger OTP dispatch
    * POST /api/auth/faculty/login
    */
   async loginFaculty({ identifier, password }) {
     const response = await api.post('/auth/faculty/login', {
       identifier,
       password,
+    });
+    return response.data;
+  },
+
+  /**
+   * Faculty / Admin Login - Step 2: Verify OTP and acquire session tokens
+   * POST /api/auth/faculty/verify-otp
+   */
+  async verifyFacultyOtp({ identifier, otp }) {
+    const response = await api.post('/auth/faculty/verify-otp', {
+      identifier,
+      otp,
+    });
+    return response.data;
+  },
+
+  /**
+   * Faculty / Admin Login - Resend OTP
+   * POST /api/auth/faculty/resend-otp
+   */
+  async resendFacultyOtp({ identifier }) {
+    const response = await api.post('/auth/faculty/resend-otp', {
+      identifier,
     });
     return response.data;
   },

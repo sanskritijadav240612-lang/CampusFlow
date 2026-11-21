@@ -64,14 +64,24 @@ export const AuthProvider = ({ children }) => {
     return response;
   };
 
-  // Faculty login
+  // Faculty login - Step 1: Credential verification (triggers OTP)
   const loginFaculty = async (credentials) => {
-    const response = await authService.loginFaculty(credentials);
+    return await authService.loginFaculty(credentials);
+  };
+
+  // Faculty login - Step 2: OTP verification (establishes session)
+  const verifyFacultyOtp = async ({ identifier, otp }) => {
+    const response = await authService.verifyFacultyOtp({ identifier, otp });
     if (response.success && response.data) {
       setUser(response.data.user);
       setAccessToken(response.data.accessToken);
     }
     return response;
+  };
+
+  // Faculty login - Resend OTP
+  const resendFacultyOtp = async ({ identifier }) => {
+    return await authService.resendFacultyOtp({ identifier });
   };
 
   // Session Logout
@@ -96,6 +106,8 @@ export const AuthProvider = ({ children }) => {
     registerStudent,
     loginStudent,
     loginFaculty,
+    verifyFacultyOtp,
+    resendFacultyOtp,
     logout,
   };
 

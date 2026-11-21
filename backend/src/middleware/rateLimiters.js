@@ -43,3 +43,25 @@ export const refreshLimiter = rateLimit({
     message: 'Too many session refresh requests. Please try again after 15 minutes.',
   },
 });
+
+export const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Max 20 verification attempts per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many verification attempts from this IP. Please wait a few minutes.',
+  },
+});
+
+export const otpResendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 resend requests per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many verification code resend requests. Please wait a few minutes.',
+  },
+});

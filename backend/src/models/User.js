@@ -81,6 +81,31 @@ const userSchema = new mongoose.Schema(
       select: false,
       default: null,
     },
+    otpHash: {
+      type: String,
+      select: false,
+      default: null,
+    },
+    otpExpiresAt: {
+      type: Date,
+      select: false,
+      default: null,
+    },
+    otpAttempts: {
+      type: Number,
+      select: false,
+      default: 0,
+    },
+    otpLastSentAt: {
+      type: Date,
+      select: false,
+      default: null,
+    },
+    otpResendCount: {
+      type: Number,
+      select: false,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -89,6 +114,11 @@ const userSchema = new mongoose.Schema(
         delete ret.passwordHash;
         delete ret.refreshTokenHash;
         delete ret.refreshTokenExpiresAt;
+        delete ret.otpHash;
+        delete ret.otpExpiresAt;
+        delete ret.otpAttempts;
+        delete ret.otpLastSentAt;
+        delete ret.otpResendCount;
         delete ret.__v;
         return ret;
       },
@@ -98,6 +128,11 @@ const userSchema = new mongoose.Schema(
         delete ret.passwordHash;
         delete ret.refreshTokenHash;
         delete ret.refreshTokenExpiresAt;
+        delete ret.otpHash;
+        delete ret.otpExpiresAt;
+        delete ret.otpAttempts;
+        delete ret.otpLastSentAt;
+        delete ret.otpResendCount;
         delete ret.__v;
         return ret;
       },

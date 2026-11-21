@@ -18,8 +18,8 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Notification type is required'],
       enum: {
-        values: ['request_approved', 'request_rejected'],
-        message: '{VALUE} is not a valid notification type. Allowed types: request_approved, request_rejected',
+        values: ['request_approved', 'request_rejected', 'request_submitted'],
+        message: '{VALUE} is not a valid notification type. Allowed types: request_approved, request_rejected, request_submitted',
       },
     },
     status: {

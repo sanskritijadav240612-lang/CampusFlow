@@ -46,22 +46,57 @@ export const loginStudent = async (req, res, next) => {
 };
 
 /**
- * Faculty login
+ * Faculty login - Step 1: Validates credentials and sends 6-digit OTP to registered faculty email
+ * CRITICAL: Does NOT issue access token or refresh cookie
  */
 export const loginFaculty = async (req, res, next) => {
   try {
-    const { user, accessToken, refreshToken } = await authService.loginFaculty(req.body);
+    const result = await authService.loginFaculty(req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Verification code sent to registered faculty email.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Faculty login - Step 2: Validates 6-digit OTP and establishes session
+ */
+export const verifyFacultyOtp = async (req, res, next) => {
+  try {
+    const { user, accessToken, refreshToken } = await authService.verifyFacultyOtp(req.body);
 
     // Store raw refresh token strictly in HTTP-only cookie
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
-      message: 'Faculty logged in successfully',
+      message: 'Faculty authenticated successfully',
       data: {
         user,
         accessToken,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Faculty login - Resend 6-digit OTP with 60s cooldown
+ */
+export const resendFacultyOtp = async (req, res, next) => {
+  try {
+    const result = await authService.resendFacultyOtp(req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result,
     });
   } catch (error) {
     next(error);

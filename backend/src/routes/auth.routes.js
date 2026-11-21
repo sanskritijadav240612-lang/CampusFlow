@@ -3,6 +3,8 @@ import {
   registerStudent,
   loginStudent,
   loginFaculty,
+  verifyFacultyOtp,
+  resendFacultyOtp,
   refreshToken,
   logout,
   getCurrentUser,
@@ -12,11 +14,15 @@ import {
   registerStudentSchema,
   loginStudentSchema,
   loginFacultySchema,
+  verifyFacultyOtpSchema,
+  resendFacultyOtpSchema,
 } from '../validators/auth.schemas.js';
 import {
   studentRegisterLimiter,
   loginLimiter,
   refreshLimiter,
+  otpVerifyLimiter,
+  otpResendLimiter,
 } from '../middleware/rateLimiters.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 
@@ -38,12 +44,28 @@ router.post(
   loginStudent
 );
 
-// Faculty login
+// Faculty login - Step 1: Credentials -> Send OTP
 router.post(
   '/faculty/login',
   loginLimiter,
   validate(loginFacultySchema),
   loginFaculty
+);
+
+// Faculty login - Step 2: Verify OTP -> Receive JWT + Refresh Cookie
+router.post(
+  '/faculty/verify-otp',
+  otpVerifyLimiter,
+  validate(verifyFacultyOtpSchema),
+  verifyFacultyOtp
+);
+
+// Faculty login - Resend OTP (with cooldown & rate limits)
+router.post(
+  '/faculty/resend-otp',
+  otpResendLimiter,
+  validate(resendFacultyOtpSchema),
+  resendFacultyOtp
 );
 
 // Refresh access token via HTTP-only cookie

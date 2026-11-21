@@ -158,8 +158,10 @@ export const getFacultyRequestConflicts = async (requestId) => {
   const { startAt, endAt, attendeeCount, requestedResources } = request;
   const resourceIds = requestedResources.map((r) => r.resourceId._id || r.resourceId);
 
-  // 1. Find overlapping active allocations for the same resources
+  // 1. Find overlapping active allocations for the same resources from other requests
+  // Exclude allocations belonging to this request so approved requests do not conflict with themselves
   const overlappingAllocations = await Allocation.find({
+    eventRequestId: { $ne: request._id },
     resourceId: { $in: resourceIds },
     status: 'active',
     startAt: { $lt: endAt },
@@ -353,6 +355,7 @@ export const approveFacultyRequest = async ({ requestId, facultyUserId, decision
           endAt: request.endAt,
           attendeeCount: request.attendeeCount,
           requestedResources: request.requestedResources,
+          excludeRequestId: request._id,
         },
         { session }
       );
@@ -433,6 +436,12 @@ export const approveFacultyRequest = async ({ requestId, facultyUserId, decision
           console.error('Post-commit approval email dispatch warning:', emailErr.message);
         });
       }
+
+      await request.populate([
+        { path: 'studentId', select: 'name email enrollmentNumber' },
+        { path: 'decisionBy', select: 'name email facultyId' },
+        { path: 'requestedResources.resourceId', select: 'name category resourceMode capacity totalQuantity location' },
+      ]);
 
       return {
         request: request.toJSON(),
@@ -540,6 +549,12 @@ export const rejectFacultyRequest = async ({ requestId, facultyUserId, decisionR
       console.error('Post-save rejection email dispatch warning:', emailErr.message);
     });
   }
+
+  await request.populate([
+    { path: 'studentId', select: 'name email enrollmentNumber' },
+    { path: 'decisionBy', select: 'name email facultyId' },
+    { path: 'requestedResources.resourceId', select: 'name category resourceMode capacity totalQuantity location' },
+  ]);
 
   return {
     request: request.toJSON(),

@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 import EventRequest from '../models/EventRequest.js';
 import Conversation from '../models/Conversation.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import * as availabilityService from './availability.service.js';
+import { dispatchNotification } from './notification.service.js';
 
 /**
  * Creates an event request with status 'Under Review' after re-verifying availability
@@ -52,6 +55,27 @@ export const createEventRequest = async ({ studentId, data }) => {
     })),
     status: 'Under Review',
   });
+
+  // Queue and dispatch submission confirmation email to the registered student
+  try {
+    const student = await User.findById(studentId);
+    if (student?.email) {
+      const dedupeKey = `req-${newRequest._id.toString()}-submitted`;
+      const notification = await Notification.create({
+        eventRequestId: newRequest._id,
+        recipientEmail: student.email,
+        type: 'request_submitted',
+        status: 'pending',
+        dedupeKey,
+      });
+
+      dispatchNotification(notification._id).catch((emailErr) => {
+        console.error('Submission notification dispatch warning:', emailErr.message);
+      });
+    }
+  } catch (notifErr) {
+    console.error('Submission notification queue warning:', notifErr.message);
+  }
 
   return newRequest;
 };

@@ -52,3 +52,30 @@ export const loginFacultySchema = z
   .strict({
     message: 'Unexpected field in faculty login payload',
   });
+
+export const verifyFacultyOtpSchema = z
+  .object({
+    identifier: z
+      .string({ required_error: 'Email or Faculty ID is required' })
+      .trim()
+      .min(1, 'Email or Faculty ID is required'),
+    otp: z
+      .string({ required_error: 'Verification code is required' })
+      .trim()
+      .length(6, 'Verification code must be exactly 6 digits')
+      .regex(/^\d{6}$/, 'Verification code must contain digits only'),
+  })
+  .strict({
+    message: 'Unexpected field in OTP verification payload',
+  });
+
+export const resendFacultyOtpSchema = z
+  .object({
+    identifier: z
+      .string({ required_error: 'Email or Faculty ID is required' })
+      .trim()
+      .min(1, 'Email or Faculty ID is required'),
+  })
+  .strict({
+    message: 'Unexpected field in OTP resend payload',
+  });

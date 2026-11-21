@@ -67,6 +67,37 @@ STRICT RESTRICTIONS:
 };
 
 /**
+ * Robustly parses and extracts JSON content from AI model outputs,
+ * stripping reasoning tags (<think>...</think>), markdown code fences, and conversational preamble.
+ */
+export const cleanAndParseJson = (rawContent) => {
+  if (!rawContent || typeof rawContent !== 'string') {
+    throw new Error('Received empty response from AI service.');
+  }
+
+  // 1. Remove reasoning / thought tags common in models like Nemotron, DeepSeek, Qwen
+  let text = rawContent
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
+    .trim();
+
+  // 2. Extract content from within markdown code blocks (```json ... ``` or ``` ... ```) if present
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    text = codeBlockMatch[1].trim();
+  }
+
+  // 3. Fallback: extract the outermost JSON object bounds ({ ... })
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.substring(firstBrace, lastBrace + 1).trim();
+  }
+
+  return JSON.parse(text);
+};
+
+/**
  * Call the OpenAI-compatible AI provider
  */
 export const extractEventDetails = async ({ messages, newMessage, activeResources, currentDraft }) => {
@@ -90,20 +121,28 @@ export const extractEventDetails = async ({ messages, newMessage, activeResource
   ];
 
   const endpoint = `${env.AI_BASE_URL.replace(/\/+$/, '')}/chat/completions`;
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${env.AI_API_KEY}`,
+    'HTTP-Referer': env.FRONTEND_URL || 'http://localhost:5173',
+    'X-Title': 'CampusFlow',
+  };
+
+  const baseBody = {
+    model: env.AI_MODEL,
+    messages: formattedMessages,
+    temperature: 0.2,
+  };
 
   let response;
   try {
+    // Attempt with response_format first
     response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.AI_API_KEY}`,
-      },
+      headers: requestHeaders,
       body: JSON.stringify({
-        model: env.AI_MODEL,
-        messages: formattedMessages,
+        ...baseBody,
         response_format: { type: 'json_object' },
-        temperature: 0.2,
       }),
       signal: AbortSignal.timeout(AI_TIMEOUT_MS),
     });
@@ -116,6 +155,39 @@ export const extractEventDetails = async ({ messages, newMessage, activeResource
     const networkError = new Error('Failed to reach AI service provider.');
     networkError.statusCode = 502;
     throw networkError;
+  }
+
+  // If provider rejects response_format with 400 (common on free/reasoning models), retry once without it
+  if (!response.ok && response.status === 400) {
+    let errorDetail = '';
+    try {
+      const cloned = await response.clone().json();
+      errorDetail = (cloned.error?.message || '').toLowerCase();
+    } catch {}
+
+    if (
+      errorDetail.includes('response_format') ||
+      errorDetail.includes('unsupported parameter') ||
+      errorDetail.includes('schema') ||
+      errorDetail.includes('format') ||
+      errorDetail.includes('not supported')
+    ) {
+      console.warn(`AI Provider rejected response_format (${errorDetail}). Retrying without response_format...`);
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify(baseBody),
+          signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+        });
+      } catch (retryErr) {
+        if (retryErr.name === 'TimeoutError' || retryErr.name === 'AbortError') {
+          const timeoutError = new Error('AI service request timed out. Please try again.');
+          timeoutError.statusCode = 504;
+          throw timeoutError;
+        }
+      }
+    }
   }
 
   if (!response.ok) {
@@ -141,12 +213,12 @@ export const extractEventDetails = async ({ messages, newMessage, activeResource
     throw invalidError;
   }
 
-  // Parse JSON, stripping markdown code block if present
+  // Parse JSON with robust multi-stage extractor
   let parsedContent;
   try {
-    const cleaned = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-    parsedContent = JSON.parse(cleaned);
-  } catch {
+    parsedContent = cleanAndParseJson(rawContent);
+  } catch (err) {
+    console.error('Failed to parse AI output as JSON. Raw preview:', rawContent.slice(0, 300));
     const jsonError = new Error('AI service returned non-JSON content.');
     jsonError.statusCode = 502;
     throw jsonError;

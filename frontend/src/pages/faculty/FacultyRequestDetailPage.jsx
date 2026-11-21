@@ -78,17 +78,13 @@ export const FacultyRequestDetailPage = () => {
     try {
       const response = await facultyService.approveRequest(requestId, decisionRemark);
       if (response.success && response.data?.request) {
-        setRequest(response.data.request);
         setIsApproveModalOpen(false);
         setDecisionRemark('');
         setDecisionFeedback({
           type: 'success',
           message: 'Request approved successfully! Resources have been locked and allocated atomically in MongoDB.',
         });
-        // Refresh conflicts
-        facultyService.getRequestConflicts(requestId).then((res) => {
-          if (res.success) setConflictsData(res.data);
-        });
+        await fetchRequestAndConflicts();
       }
     } catch (err) {
       setDecisionFeedback({
@@ -106,13 +102,13 @@ export const FacultyRequestDetailPage = () => {
     try {
       const response = await facultyService.rejectRequest(requestId, decisionRemark);
       if (response.success && response.data?.request) {
-        setRequest(response.data.request);
         setIsRejectModalOpen(false);
         setDecisionRemark('');
         setDecisionFeedback({
           type: 'success',
           message: 'Event request has been rejected. Notification record queued.',
         });
+        await fetchRequestAndConflicts();
       }
     } catch (err) {
       setDecisionFeedback({
@@ -244,7 +240,11 @@ export const FacultyRequestDetailPage = () => {
                 : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
             )}
           >
-            {hasConflict ? 'Resource Conflicts Detected' : '0 Conflicts &bull; Clear to Allocate'}
+            {hasConflict
+              ? 'Resource Conflicts Detected'
+              : request.status === 'Approved'
+                ? '0 Conflicts \u2022 Successfully Allocated'
+                : '0 Conflicts \u2022 Clear to Allocate'}
           </span>
         </div>
 

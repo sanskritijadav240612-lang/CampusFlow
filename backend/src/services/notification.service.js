@@ -70,24 +70,38 @@ export const dispatchNotification = async (notificationId) => {
     let subject = '';
     let html = '';
 
-    if (notification.type === 'request_approved') {
+    if (notification.type === 'request_submitted') {
+      subject = `CampusFlow: Event Request Submitted - ${request.title}`;
+      html = emailService.renderSubmissionEmail({
+        studentName,
+        eventTitle: request.title,
+        requestId: request._id.toString(),
+        startAt: request.startAt,
+        endAt: request.endAt,
+        resources: request.requestedResources,
+      });
+    } else if (notification.type === 'request_approved') {
       subject = `CampusFlow: Event Request Approved - ${request.title}`;
       html = emailService.renderApprovalEmail({
         studentName,
         eventTitle: request.title,
+        requestId: request._id.toString(),
         startAt: request.startAt,
         endAt: request.endAt,
         resources: request.requestedResources,
         decisionRemark: request.decisionRemark,
+        decisionAt: request.decisionAt || new Date(),
       });
     } else if (notification.type === 'request_rejected') {
       subject = `CampusFlow: Event Request Update - ${request.title}`;
       html = emailService.renderRejectionEmail({
         studentName,
         eventTitle: request.title,
+        requestId: request._id.toString(),
         startAt: request.startAt,
         endAt: request.endAt,
         decisionRemark: request.decisionRemark,
+        decisionAt: request.decisionAt || new Date(),
       });
     } else {
       notification.status = 'failed';

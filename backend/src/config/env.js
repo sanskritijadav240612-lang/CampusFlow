@@ -22,7 +22,8 @@ const envSchema = z
     AI_MODEL: z.string().optional(),
     CAMPUS_TIMEZONE: z.string().default('Asia/Kolkata'),
     RESEND_API_KEY: z.string().optional(),
-    RESEND_FROM_EMAIL: z.string().default('CampusFlow <onboarding@resend.dev>'),
+    EMAIL_FROM: z.string().optional(),
+    RESEND_FROM_EMAIL: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -45,4 +46,10 @@ if (!parsedEnv.success) {
   process.exit(1);
 }
 
-export const env = parsedEnv.data;
+const finalEmailFrom = parsedEnv.data.EMAIL_FROM || parsedEnv.data.RESEND_FROM_EMAIL || 'CampusFlow <onboarding@resend.dev>';
+
+export const env = {
+  ...parsedEnv.data,
+  EMAIL_FROM: finalEmailFrom,
+  RESEND_FROM_EMAIL: finalEmailFrom,
+};

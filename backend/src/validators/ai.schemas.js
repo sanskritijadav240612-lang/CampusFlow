@@ -14,7 +14,10 @@ export const postMessageSchema = z
 
 export const aiResourceMentionSchema = z.object({
   name: z.string().trim().min(1, 'Resource name mention cannot be empty'),
-  requestedQuantity: z.number().int().positive().nullable().optional(),
+  requestedQuantity: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : Number(val) || val),
+    z.number().int().positive().nullable().optional()
+  ),
 });
 
 export const aiEventDraftSchema = z.object({
@@ -23,8 +26,14 @@ export const aiEventDraftSchema = z.object({
   eventType: z.string().trim().nullable().optional(),
   startAt: z.string().trim().nullable().optional(),
   endAt: z.string().trim().nullable().optional(),
-  attendeeCount: z.number().int().positive().nullable().optional(),
-  resourceMentions: z.array(aiResourceMentionSchema).default([]),
+  attendeeCount: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : Number(val) || val),
+    z.number().int().positive().nullable().optional()
+  ),
+  resourceMentions: z.preprocess(
+    (val) => (val === null || val === undefined ? [] : val),
+    z.array(aiResourceMentionSchema).default([])
+  ),
 });
 
 export const aiResponseSchema = z.object({

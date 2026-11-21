@@ -1,5 +1,7 @@
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import * as emailService from './email.service.js';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -112,7 +114,7 @@ export const loginStudent = async ({ email, password }) => {
 };
 
 /**
- * Authenticate faculty user via college email or facultyId
+ * Step 1: Validate faculty credentials and generate/send 6-digit email OTP
  */
 export const loginFaculty = async ({ identifier, password }) => {
   const trimmed = identifier.trim();
@@ -123,7 +125,7 @@ export const loginFaculty = async ({ identifier, password }) => {
     role: 'faculty',
     isActive: true,
     $or: [{ email: normalizedEmail }, { facultyId: trimmed }],
-  }).select('+passwordHash');
+  }).select('+passwordHash +otpHash +otpExpiresAt +otpAttempts +otpLastSentAt +otpResendCount');
 
   if (!user) {
     const error = new Error('Invalid credentials');
@@ -138,11 +140,104 @@ export const loginFaculty = async ({ identifier, password }) => {
     throw error;
   }
 
-  // Generate tokens
+  // Generate cryptographically secure 6-digit OTP
+  const rawOtp = crypto.randomInt(100000, 1000000).toString();
+  const otpHash = crypto.createHash('sha256').update(rawOtp).digest('hex');
+  const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  user.otpHash = otpHash;
+  user.otpExpiresAt = otpExpiresAt;
+  user.otpAttempts = 0;
+  user.otpLastSentAt = new Date();
+  user.otpResendCount = 0;
+  await user.save();
+
+  // Dispatch OTP email to faculty's verified MongoDB email address
+  try {
+    await emailService.sendFacultyOtpEmail({
+      to: user.email,
+      facultyName: user.name,
+      otp: rawOtp,
+    });
+  } catch (emailErr) {
+    console.error('Faculty OTP email dispatch error:', emailErr.message);
+  }
+
+  return {
+    otpRequired: true,
+    emailMasked: emailService.maskEmail(user.email),
+    identifier: user.email,
+  };
+};
+
+/**
+ * Step 2: Validate faculty 6-digit email OTP and issue session tokens
+ */
+export const verifyFacultyOtp = async ({ identifier, otp }) => {
+  const trimmed = identifier.trim();
+  const normalizedEmail = trimmed.toLowerCase();
+
+  const user = await User.findOne({
+    role: 'faculty',
+    isActive: true,
+    $or: [{ email: normalizedEmail }, { facultyId: trimmed }],
+  }).select('+passwordHash +otpHash +otpExpiresAt +otpAttempts +otpLastSentAt +otpResendCount');
+
+  if (!user) {
+    const error = new Error('Invalid credentials or verification session');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  if (!user.otpHash || !user.otpExpiresAt) {
+    const error = new Error('No pending verification code found. Please sign in again.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const MAX_ATTEMPTS = 5;
+  if ((user.otpAttempts || 0) >= MAX_ATTEMPTS) {
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    await user.save();
+    const error = new Error('Maximum verification attempts exceeded. Please sign in again to request a new code.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (new Date() > new Date(user.otpExpiresAt)) {
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    await user.save();
+    const error = new Error('Verification code has expired. Please request a new code.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const incomingOtpHash = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+  if (user.otpHash !== incomingOtpHash) {
+    user.otpAttempts = (user.otpAttempts || 0) + 1;
+    await user.save();
+    const remaining = Math.max(0, MAX_ATTEMPTS - user.otpAttempts);
+    const error = new Error(
+      remaining > 0
+        ? `Invalid verification code. ${remaining} attempt(s) remaining.`
+        : 'Invalid verification code. Maximum attempts reached.'
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Single-use: Invalidate OTP on successful verification
+  user.otpHash = null;
+  user.otpExpiresAt = null;
+  user.otpAttempts = 0;
+  user.otpResendCount = 0;
+
+  // Generate tokens only after OTP is verified
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
-  // Store SHA-256 hash of refresh token
   const refreshTokenHash = hashToken(refreshToken);
   const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 
@@ -154,6 +249,69 @@ export const loginFaculty = async ({ identifier, password }) => {
     user: user.toJSON(),
     accessToken,
     refreshToken,
+  };
+};
+
+/**
+ * Resend faculty 6-digit email OTP with rate limiting & cooldown
+ */
+export const resendFacultyOtp = async ({ identifier }) => {
+  const trimmed = identifier.trim();
+  const normalizedEmail = trimmed.toLowerCase();
+
+  const user = await User.findOne({
+    role: 'faculty',
+    isActive: true,
+    $or: [{ email: normalizedEmail }, { facultyId: trimmed }],
+  }).select('+passwordHash +otpHash +otpExpiresAt +otpAttempts +otpLastSentAt +otpResendCount');
+
+  if (!user) {
+    const error = new Error('Invalid credentials or verification session');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const COOLDOWN_MS = 60 * 1000; // 60 seconds
+  if (user.otpLastSentAt && (Date.now() - new Date(user.otpLastSentAt).getTime()) < COOLDOWN_MS) {
+    const waitSeconds = Math.ceil((COOLDOWN_MS - (Date.now() - new Date(user.otpLastSentAt).getTime())) / 1000);
+    const error = new Error(`Please wait ${waitSeconds} second(s) before requesting a new code.`);
+    error.statusCode = 429;
+    throw error;
+  }
+
+  const MAX_RESENDS = 3;
+  if ((user.otpResendCount || 0) >= MAX_RESENDS) {
+    const error = new Error('Maximum resend limit reached for this session. Please sign in again.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Invalidate previous OTP and generate new 6-digit OTP
+  const rawOtp = crypto.randomInt(100000, 1000000).toString();
+  const otpHash = crypto.createHash('sha256').update(rawOtp).digest('hex');
+  const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  user.otpHash = otpHash;
+  user.otpExpiresAt = otpExpiresAt;
+  user.otpAttempts = 0; // reset verification attempts for the newly issued OTP
+  user.otpLastSentAt = new Date();
+  user.otpResendCount = (user.otpResendCount || 0) + 1;
+  await user.save();
+
+  try {
+    await emailService.sendFacultyOtpEmail({
+      to: user.email,
+      facultyName: user.name,
+      otp: rawOtp,
+    });
+  } catch (emailErr) {
+    console.error('Faculty OTP email resend error:', emailErr.message);
+  }
+
+  return {
+    success: true,
+    message: 'A new verification code has been sent to your registered email.',
+    emailMasked: emailService.maskEmail(user.email),
   };
 };
 
