@@ -16,6 +16,7 @@ import {
 import {
   studentRegisterLimiter,
   loginLimiter,
+  refreshLimiter,
 } from '../middleware/rateLimiters.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 
@@ -46,7 +47,7 @@ router.post(
 );
 
 // Refresh access token via HTTP-only cookie
-router.post('/refresh', refreshToken);
+router.post('/refresh', refreshLimiter, refreshToken);
 
 // Logout session
 router.post('/logout', logout);

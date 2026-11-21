@@ -32,3 +32,14 @@ export const aiMessageLimiter = rateLimit({
     message: 'Too many AI message requests. Please wait a moment and try again.',
   },
 });
+
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 session refresh requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many session refresh requests. Please try again after 15 minutes.',
+  },
+});

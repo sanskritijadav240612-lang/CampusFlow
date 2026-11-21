@@ -26,10 +26,14 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Notification status is required'],
       enum: {
-        values: ['pending', 'sent', 'failed'],
-        message: '{VALUE} is not a valid notification status. Allowed statuses: pending, sent, failed',
+        values: ['pending', 'processing', 'sent', 'failed'],
+        message: '{VALUE} is not a valid notification status. Allowed statuses: pending, processing, sent, failed',
       },
       default: 'pending',
+    },
+    lockedAt: {
+      type: Date,
+      default: null,
     },
     providerMessageId: {
       type: String,
