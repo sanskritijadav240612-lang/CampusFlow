@@ -6,6 +6,7 @@ import Notification from '../models/Notification.js';
 import AuditLog from '../models/AuditLog.js';
 import User from '../models/User.js';
 import { checkAvailability, calculateMaxConcurrentQuantity } from './availability.service.js';
+import { dispatchNotification } from './notification.service.js';
 
 const MAX_TRANSACTION_RETRIES = 3;
 
@@ -296,7 +297,7 @@ export const getFacultyRequestConflicts = async (requestId) => {
 };
 
 /**
- * Feature 20: Atomically Approve Event Request with MongoDB Transactions and Concurrency Guard
+ * Feature 20 & 23: Atomically Approve Event Request with MongoDB Transactions and Concurrency Guard
  */
 export const approveFacultyRequest = async ({ requestId, facultyUserId, decisionRemark }) => {
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -426,6 +427,13 @@ export const approveFacultyRequest = async ({ requestId, facultyUserId, decision
         console.error('AuditLog creation warning:', auditErr.message);
       }
 
+      // 9. Feature 23: Dispatch notification email after transaction successfully commits
+      if (notification?._id) {
+        dispatchNotification(notification._id).catch((emailErr) => {
+          console.error('Post-commit approval email dispatch warning:', emailErr.message);
+        });
+      }
+
       return {
         request: request.toJSON(),
         notification: notification ? notification.toJSON() : null,
@@ -454,7 +462,7 @@ export const approveFacultyRequest = async ({ requestId, facultyUserId, decision
 };
 
 /**
- * Feature 21: Reject Event Request
+ * Feature 21 & 23: Reject Event Request
  */
 export const rejectFacultyRequest = async ({ requestId, facultyUserId, decisionRemark }) => {
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -524,6 +532,13 @@ export const rejectFacultyRequest = async ({ requestId, facultyUserId, decisionR
     });
   } catch (auditErr) {
     console.error('AuditLog creation warning on reject:', auditErr.message);
+  }
+
+  // Feature 23: Dispatch rejection email after decision is saved
+  if (notification?._id) {
+    dispatchNotification(notification._id).catch((emailErr) => {
+      console.error('Post-save rejection email dispatch warning:', emailErr.message);
+    });
   }
 
   return {

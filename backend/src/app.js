@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import requestRoutes from './routes/request.routes.js';
 import facultyRoutes from './routes/faculty.routes.js';
+import resourceRoutes from './routes/resource.routes.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/faculty', facultyRoutes);
+app.use('/api/resources', resourceRoutes);
 
 // 404 handler
 app.use(notFound);

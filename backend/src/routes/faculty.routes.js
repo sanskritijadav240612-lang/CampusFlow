@@ -6,6 +6,8 @@ import {
   getRequestConflicts,
   approveRequest,
   rejectRequest,
+  getNotifications,
+  retryNotificationHandler,
 } from '../controllers/faculty.controller.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -42,5 +44,11 @@ router.patch(
   validate(decisionRemarkSchema),
   rejectRequest
 );
+
+// Feature 23: Notification Delivery History
+router.get('/notifications', getNotifications);
+
+// Feature 23: Retry Failed or Pending Notification
+router.post('/notifications/:notificationId/retry', retryNotificationHandler);
 
 export default router;

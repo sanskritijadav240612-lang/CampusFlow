@@ -1,4 +1,5 @@
 import * as facultyService from '../services/faculty.service.js';
+import * as notificationService from '../services/notification.service.js';
 import { facultyRequestsQuerySchema } from '../validators/faculty.schemas.js';
 
 /**
@@ -117,6 +118,40 @@ export const rejectRequest = async (req, res, next) => {
       success: true,
       message: 'Event request has been rejected.',
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Feature 23: Retrieve notification delivery history
+ */
+export const getNotifications = async (req, res, next) => {
+  try {
+    const result = await notificationService.getNotificationHistory(req.query);
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Feature 23: Retry delivery for a pending or failed notification
+ */
+export const retryNotificationHandler = async (req, res, next) => {
+  try {
+    const notification = await notificationService.retryNotification(req.params.notificationId);
+    return res.status(200).json({
+      success: true,
+      message:
+        notification.status === 'sent'
+          ? 'Notification resent successfully.'
+          : 'Notification retry attempted.',
+      data: { notification },
     });
   } catch (error) {
     next(error);

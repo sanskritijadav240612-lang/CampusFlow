@@ -21,6 +21,8 @@ const envSchema = z
     AI_BASE_URL: z.string().url('AI_BASE_URL must be a valid URL').optional(),
     AI_MODEL: z.string().optional(),
     CAMPUS_TIMEZONE: z.string().default('Asia/Kolkata'),
+    RESEND_API_KEY: z.string().optional(),
+    RESEND_FROM_EMAIL: z.string().default('CampusFlow <onboarding@resend.dev>'),
   })
   .refine(
     (data) => {
