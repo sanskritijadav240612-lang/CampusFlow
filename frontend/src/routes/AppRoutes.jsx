@@ -28,6 +28,7 @@ import FacultyDashboardPage from '../pages/faculty/FacultyDashboardPage';
 import FacultyRequestsPage from '../pages/faculty/FacultyRequestsPage';
 import FacultyRequestDetailPage from '../pages/faculty/FacultyRequestDetailPage';
 import FacultyResourcesPage from '../pages/faculty/FacultyResourcesPage';
+import FacultyNotificationsPage from '../pages/faculty/FacultyNotificationsPage';
 import FacultyProfilePage from '../pages/faculty/FacultyProfilePage';
 
 // 404 Page
@@ -67,6 +68,7 @@ export const AppRoutes = () => {
           <Route path="requests" element={<FacultyRequestsPage />} />
           <Route path="requests/:requestId" element={<FacultyRequestDetailPage />} />
           <Route path="resources" element={<FacultyResourcesPage />} />
+          <Route path="notifications" element={<FacultyNotificationsPage />} />
           <Route path="profile" element={<FacultyProfilePage />} />
         </Route>
       </Route>

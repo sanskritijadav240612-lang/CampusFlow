@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { LayoutDashboard, Inbox, Database, User } from 'lucide-react';
+import { LayoutDashboard, Inbox, Database, Bell, User } from 'lucide-react';
 import HorizontalNav from '../components/common/HorizontalNav';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,6 +8,7 @@ const FACULTY_NAV_ITEMS = [
   { label: 'Overview', to: '/faculty', icon: LayoutDashboard },
   { label: 'Request Inbox', to: '/faculty/requests', icon: Inbox },
   { label: 'Resource Inventory', to: '/faculty/resources', icon: Database },
+  { label: 'Notifications', to: '/faculty/notifications', icon: Bell },
   { label: 'Profile', to: '/faculty/profile', icon: User },
 ];
 
