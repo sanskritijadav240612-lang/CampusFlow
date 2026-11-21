@@ -47,9 +47,13 @@ export const calculateMaxConcurrentQuantity = (allocations, requestedStart, requ
 };
 
 /**
- * Evaluates real-time resource availability against active approved allocations
+ * Evaluates real-time resource availability against active approved allocations.
+ * Supports optional MongoDB transaction session for atomic consistency during approval.
  */
-export const checkAvailability = async ({ startAt, endAt, attendeeCount, requestedResources }) => {
+export const checkAvailability = async (
+  { startAt, endAt, attendeeCount, requestedResources },
+  { session } = {}
+) => {
   const requestedStart = new Date(startAt);
   const requestedEnd = new Date(endAt);
 
@@ -82,18 +86,26 @@ export const checkAvailability = async ({ startAt, endAt, attendeeCount, request
   const distinctRequested = Array.from(resourceMap.values());
   const resourceIds = distinctRequested.map((r) => new mongoose.Types.ObjectId(r.resourceId));
 
-  // Load resources from MongoDB
-  const resourcesFromDb = await Resource.find({ _id: { $in: resourceIds } });
+  // Load resources from MongoDB (within session if provided)
+  const resourcesFromDb = await Resource.find(
+    { _id: { $in: resourceIds } },
+    null,
+    session ? { session } : {}
+  );
   const dbResourceMap = new Map(resourcesFromDb.map((r) => [r._id.toString(), r]));
 
-  // Load active overlapping allocations
+  // Load active overlapping allocations (within session if provided)
   // Overlap condition: allocation.startAt < requestedEnd AND allocation.endAt > requestedStart
-  const overlappingAllocations = await Allocation.find({
-    resourceId: { $in: resourceIds },
-    status: 'active',
-    startAt: { $lt: requestedEnd },
-    endAt: { $gt: requestedStart },
-  });
+  const overlappingAllocations = await Allocation.find(
+    {
+      resourceId: { $in: resourceIds },
+      status: 'active',
+      startAt: { $lt: requestedEnd },
+      endAt: { $gt: requestedStart },
+    },
+    null,
+    session ? { session } : {}
+  );
 
   const allocationsByResource = new Map();
   for (const alloc of overlappingAllocations) {
