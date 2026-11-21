@@ -1,10 +1,45 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
-let resendClient = null;
-if (env.RESEND_API_KEY && env.RESEND_API_KEY.trim().length > 0) {
-  resendClient = new Resend(env.RESEND_API_KEY);
-}
+let transporter = null;
+
+export const getTransporter = () => {
+  if (transporter) return transporter;
+
+  // If explicit SMTP credentials or host/service are configured
+  if (env.SMTP_HOST || env.SMTP_USER || env.SMTP_SERVICE) {
+    const transportConfig = {};
+
+    if (env.SMTP_SERVICE) {
+      transportConfig.service = env.SMTP_SERVICE;
+    } else if (env.SMTP_HOST) {
+      transportConfig.host = env.SMTP_HOST;
+      transportConfig.port = env.SMTP_PORT || 587;
+      transportConfig.secure = env.SMTP_SECURE || (env.SMTP_PORT === 465);
+    }
+
+    if (env.SMTP_USER && env.SMTP_PASS) {
+      transportConfig.auth = {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+      };
+    }
+
+    transporter = nodemailer.createTransport(transportConfig);
+  } else {
+    // Development / test fallback when SMTP credentials are not yet configured
+    // jsonTransport allows local testing and CI/test runs without a live SMTP server
+    transporter = nodemailer.createTransport({
+      jsonTransport: true,
+    });
+  }
+
+  return transporter;
+};
+
+export const setTransporter = (customTransporter) => {
+  transporter = customTransporter;
+};
 
 /**
  * Masks an email for safe logging and client feedback (e.g. r***h@campus.edu)
@@ -329,43 +364,30 @@ export const renderFacultyOtpEmail = ({ facultyName, otp, expiryMinutes = 5 }) =
 };
 
 /**
- * Universal email dispatcher through Resend SDK safely
+ * Universal email dispatcher through Nodemailer safely
  */
-export const sendEmail = async ({ to, subject, html }) => {
-  if (!resendClient) {
-    return {
-      success: false,
-      error: 'Email delivery skipped: RESEND_API_KEY is not configured on this server.',
-    };
-  }
-
-  const fromAddress = env.EMAIL_FROM || env.RESEND_FROM_EMAIL || 'CampusFlow <onboarding@resend.dev>';
+export const sendEmail = async ({ to, subject, html, text }) => {
+  const fromAddress = env.EMAIL_FROM || 'CampusFlow <noreply@campusflow.edu>';
 
   try {
-    const { data, error } = await resendClient.emails.send({
+    const activeTransporter = getTransporter();
+    const info = await activeTransporter.sendMail({
       from: fromAddress,
       to,
       subject,
       html,
+      text: text || undefined,
     });
-
-    if (error) {
-      console.error('Resend provider returned an error:', error.message || error);
-      return {
-        success: false,
-        error: error.message || 'Resend provider error',
-      };
-    }
 
     return {
       success: true,
-      messageId: data?.id,
+      messageId: info.messageId,
     };
   } catch (err) {
-    console.error('Resend SDK call exception:', err.message || err);
+    console.error('Nodemailer dispatch error:', err.message || err);
     return {
       success: false,
-      error: err.message || 'Network error communicating with Resend',
+      error: err.message || 'Nodemailer dispatch error',
     };
   }
 };
@@ -382,6 +404,6 @@ export const sendFacultyOtpEmail = async ({ to, facultyName, otp }) => {
   const subject = 'CampusFlow: Your Faculty Login Verification Code';
   const html = renderFacultyOtpEmail({ facultyName, otp, expiryMinutes: 5 });
 
-  console.log(`[AUTH] Dispatching faculty OTP email to: ${maskEmail(to)}`);
+  console.log(`[AUTH] Dispatching faculty OTP email via Nodemailer to: ${maskEmail(to)}`);
   return await sendEmail({ to, subject, html });
 };

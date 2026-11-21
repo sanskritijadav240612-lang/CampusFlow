@@ -549,8 +549,26 @@ const runAllTests = async () => {
 
     // 18. Test Notification Retry Logic
     if (approvalNotification) {
-      const retried = await notificationService.retryNotification(approvalNotification._id);
-      assert(retried.attemptCount >= 1, 'Notification retry handler increments attempt count safely');
+      const refreshedNotif = await Notification.findById(approvalNotification._id);
+      if (refreshedNotif.status === 'sent') {
+        await assertAsyncThrows(async () => {
+          await notificationService.retryNotification(approvalNotification._id);
+        }, 'Prevents retrying an already sent notification');
+      }
+
+      // Test retrying a failed notification
+      const failedNotif = await Notification.create({
+        eventRequestId: request1._id,
+        recipientEmail: studentUser.email,
+        type: 'request_approved',
+        status: 'failed',
+        attemptCount: 1,
+        lastError: 'Simulated network timeout',
+        dedupeKey: `test-failed-retry-${Date.now()}`,
+      });
+      const retried = await notificationService.retryNotification(failedNotif._id);
+      assert(retried.attemptCount >= 2, 'Notification retry handler increments attempt count on failed notifications');
+      await Notification.deleteOne({ _id: failedNotif._id });
     }
 
     // 19. Verify AuditLog Records
@@ -560,7 +578,15 @@ const runAllTests = async () => {
     assert(auditLogs.length >= 3, 'AuditLog records created for resource creation, approval, and rejection');
 
     // 20. FACULTY 2FA OTP & EMAIL INTEGRATION TESTS
-    console.log('\n--- SECTION 7: FACULTY 2FA OTP & RESEND EMAIL TESTS ---');
+    console.log('\n--- SECTION 7: FACULTY 2FA OTP & NODEMAILER EMAIL TESTS ---');
+
+    // Direct Nodemailer sendMail test
+    const sendResult = await emailService.sendEmail({
+      to: 'student@campus.edu',
+      subject: 'Test Notification',
+      html: '<p>Test message</p>',
+    });
+    assert(sendResult.success === true && Boolean(sendResult.messageId), 'Nodemailer dispatches email successfully and returns messageId');
 
     // Email HTML template renderers
     const now = new Date();

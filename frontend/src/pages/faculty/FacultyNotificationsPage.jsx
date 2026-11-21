@@ -100,7 +100,7 @@ export const FacultyNotificationsPage = () => {
     <div className="space-y-6">
       <PageHeader
         title="Email Notifications & Delivery Audit"
-        description="Monitor automated Resend decision emails, delivery statuses, attempt counts, and trigger manual dispatch retries."
+        description="Monitor automated notification emails, delivery statuses, attempt counts, and trigger manual dispatch retries."
         actions={
           <Button
             variant="outline"

@@ -11,7 +11,7 @@ const MAX_ATTEMPTS = 5;
 const STALE_LOCK_MS = 2 * 60 * 1000;
 
 /**
- * Feature 23 & 25: Dispatches a notification via Resend with safe atomic claim protection
+ * Feature 23 & 25: Dispatches a notification via Nodemailer with safe atomic claim protection
  */
 export const dispatchNotification = async (notificationId) => {
   if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) {

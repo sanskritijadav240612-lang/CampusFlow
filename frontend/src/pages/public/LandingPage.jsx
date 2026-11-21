@@ -186,7 +186,7 @@ export const LandingPage = () => {
                     <span className="text-slate-400 flex items-center gap-1">
                       <Bell className="w-3.5 h-3.5 text-campus-400" /> Email Dispatched
                     </span>
-                    <span className="text-slate-300 font-mono">Resend ID: #msg_9941</span>
+                    <span className="text-slate-300 font-mono">Message ID: #msg_9941</span>
                   </div>
                 </div>
               </div>
@@ -339,7 +339,7 @@ export const LandingPage = () => {
               <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
                 <Bell className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-semibold text-slate-900">Resend Email Integration</h3>
+              <h3 className="text-base font-semibold text-slate-900">Automated Email Integration</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Immediate, responsive HTML email dispatches keep students updated on approvals and rejections with faculty remarks, complete with automated deduplication.
               </p>

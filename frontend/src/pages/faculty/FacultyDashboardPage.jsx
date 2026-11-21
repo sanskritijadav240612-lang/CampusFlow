@@ -170,7 +170,7 @@ export const FacultyDashboardPage = () => {
                   </h4>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Resend email tracking, attempt counts & manual dispatch retry
+                  Automated email delivery tracking, attempt counts & manual dispatch retry
                 </p>
               </div>
               <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-campus-700 group-hover:translate-x-0.5 transition-all" />

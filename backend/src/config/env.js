@@ -21,9 +21,13 @@ const envSchema = z
     AI_BASE_URL: z.string().url('AI_BASE_URL must be a valid URL').optional(),
     AI_MODEL: z.string().optional(),
     CAMPUS_TIMEZONE: z.string().default('Asia/Kolkata'),
-    RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM: z.string().optional(),
-    RESEND_FROM_EMAIL: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().optional(),
+    SMTP_SECURE: z.preprocess((val) => val === 'true' || val === true, z.boolean()).optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_SERVICE: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -46,10 +50,9 @@ if (!parsedEnv.success) {
   process.exit(1);
 }
 
-const finalEmailFrom = parsedEnv.data.EMAIL_FROM || parsedEnv.data.RESEND_FROM_EMAIL || 'CampusFlow <onboarding@resend.dev>';
+const finalEmailFrom = parsedEnv.data.EMAIL_FROM || 'CampusFlow <noreply@campusflow.edu>';
 
 export const env = {
   ...parsedEnv.data,
   EMAIL_FROM: finalEmailFrom,
-  RESEND_FROM_EMAIL: finalEmailFrom,
 };

@@ -35,8 +35,6 @@ export const HorizontalNav = ({ roleTitle, navItems = [] }) => {
   };
 
   const displayName = user?.name || `${roleTitle} User`;
-  const displayEmail = user?.email || 'user@campus.edu';
-  const displayIdentifier = user?.enrollmentNumber || user?.facultyId || null;
 
   return (
     <>
@@ -96,10 +94,6 @@ export const HorizontalNav = ({ roleTitle, navItems = [] }) => {
                   <span className="text-xs font-semibold text-slate-800 block leading-tight">
                     {displayName}
                   </span>
-                  <span className="text-[11px] text-slate-500 block leading-tight">
-                    {displayIdentifier ? `${displayIdentifier} &bull; ` : ''}
-                    {displayEmail}
-                  </span>
                 </div>
 
                 <button
@@ -131,7 +125,6 @@ export const HorizontalNav = ({ roleTitle, navItems = [] }) => {
           <div className="md:hidden border-t border-surface-border bg-white px-4 pt-3 pb-4 space-y-1">
             <div className="pb-3 mb-2 border-b border-surface-border">
               <p className="text-xs font-semibold text-slate-900">{displayName}</p>
-              <p className="text-[11px] text-slate-500">{displayEmail}</p>
             </div>
 
             {navItems.map((item) => {

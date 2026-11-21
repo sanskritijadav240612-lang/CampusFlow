@@ -11,8 +11,8 @@ const seedInitialData = async () => {
     console.log('Seeding initial CampusFlow faculty and resource inventory...');
 
     // 1. Seed Faculty Member
-    const facultyEmail = 'rajesh.faculty@campus.edu';
-    const facultyId = 'FAC-CS-101';
+    const facultyEmail = 'sanskritijadav1@gmail.com';
+    const facultyId = 'FAC-CS-103';
     let faculty = await User.findOne({ email: facultyEmail });
 
     if (!faculty) {
@@ -107,7 +107,7 @@ const seedInitialData = async () => {
     console.error('Seeding error:', error);
     try {
       await mongoose.disconnect();
-    } catch {}
+    } catch { }
     process.exit(1);
   }
 };
