@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 21 128 61; /* #15803D Deep Emerald */
+    --color-slate-900: 15 23 42; /* #0F172A */
+  }
+
+  body {
+    @apply bg-surface-base text-slate-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Custom subtle focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-campus-600 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  /* Subtle campus badge */
+  .campus-badge-green {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60;
+  }
+  .campus-badge-amber {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60;
+  }
+  .campus-badge-rose {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60;
+  }
+  .campus-badge-slate {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200;
+  }
+
+  /* Editorial Card Surface */
+  .campus-card {
+    @apply bg-white rounded-lg border border-surface-border shadow-soft transition-all duration-150;
+  }
+}
